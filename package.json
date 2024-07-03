@@ -1,0 +1,23 @@
+{
+  "name": "forkify",
+  "version": "1.0.0",
+  "description": "Recipe application",
+  "default": "index.html",
+  "scripts": {
+    "start": "parcel index.html",
+    "build": "parcel build index.html --dist-dir ./dist"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/Rengarda/recipes.git"
+  },
+  "author": "Daria",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/Rengarda/recipes/issues"
+  },
+  "homepage": "https://github.com/Rengarda/recipes#readme",
+  "devDependencies": {
+    "sass": "^1.77.6"
+  }
+}
