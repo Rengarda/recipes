@@ -142,7 +142,7 @@
       this[globalName] = mainExports;
     }
   }
-})({"hycaY":[function(require,module,exports) {
+})({"MWpgg":[function(require,module,exports) {
 var global = arguments[3];
 var HMR_HOST = null;
 var HMR_PORT = null;
@@ -606,14 +606,13 @@ const controlRecipes = async function() {
         //2) Отображение данных рецепта с помощью метода render объекта recipeView
         (0, _recipeViewDefault.default).render(_model.state.recipe);
     } catch (err) {
-        alert(err.message);
+        console.log(err);
     }
 };
-//обработка событий 'hashchange' (изменение хэша в URL)  и 'load' (загрузка страницы).
-[
-    "hashchange",
-    "load"
-].forEach((ev)=>window.addEventListener(ev, controlRecipes));
+const init = function() {
+    (0, _recipeViewDefault.default).addHandlerRender(controlRecipes);
+};
+init();
 
 },{"@parcel/transformer-js/src/esmodule-helpers.js":"gkKU3","core-js/modules/web.immediate.js":"49tUX","regenerator-runtime/runtime":"dXNgZ","./model":"Y4A21","./views/recipeView":"l60JC"}],"gkKU3":[function(require,module,exports) {
 exports.interopDefault = function(a) {
@@ -2519,9 +2518,8 @@ const timeout = function(s) {
 };
 const getJSON = async function(url) {
     try {
-        const fetchPromis = fetch(url);
         const res = await Promise.race([
-            fetchPromis,
+            fetch(url),
             timeout((0, _config.TIMEOUT_SEC))
         ]);
         const data = await res.json();
@@ -2561,6 +2559,13 @@ class RecipeView {
     `;
         this.#clear();
         this.#parentElement.insertAdjacentHTML("afterbegin", markup);
+    }
+    addHandlerRender(handler) {
+        //обработка событий 'hashchange' (изменение хэша в URL)  и 'load' (загрузка страницы).
+        [
+            "hashchange",
+            "load"
+        ].forEach((ev)=>window.addEventListener(ev, handler));
     }
     #generateMarkup() {
         return `
@@ -2947,6 +2952,6 @@ Fraction.primeFactors = function(n) {
 };
 module.exports.Fraction = Fraction;
 
-},{}]},["hycaY","aenu9"], "aenu9", "parcelRequire3a11")
+},{}]},["MWpgg","aenu9"], "aenu9", "parcelRequire3a11")
 
 //# sourceMappingURL=index.e37f48ea.js.map

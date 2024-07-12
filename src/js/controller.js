@@ -27,10 +27,11 @@ const controlRecipes = async function () {
     //2) Отображение данных рецепта с помощью метода render объекта recipeView
     recipeView.render(model.state.recipe);
   } catch (err) {
-    alert(err.message);
+    console.log(err);
   }
 };
-//обработка событий 'hashchange' (изменение хэша в URL)  и 'load' (загрузка страницы).
-['hashchange', 'load'].forEach(ev =>
-  window.addEventListener(ev, controlRecipes)
-);
+
+const init = function () {
+  recipeView.addHandlerRender(controlRecipes);
+};
+init();

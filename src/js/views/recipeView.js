@@ -28,6 +28,11 @@ export class RecipeView {
     this.#parentElement.insertAdjacentHTML('afterbegin', markup);
   }
 
+  addHandlerRender(handler) {
+    //обработка событий 'hashchange' (изменение хэша в URL)  и 'load' (загрузка страницы).
+    ['hashchange', 'load'].forEach(ev => window.addEventListener(ev, handler));
+  }
+
   #generateMarkup() {
     return `
       <figure class="recipe__fig">
