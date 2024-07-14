@@ -4,6 +4,8 @@ import { Fraction } from 'fractional';
 export class RecipeView {
   #parentElement = document.querySelector('.recipe');
   #data; // Приватное поле для хранения данных о рецепте
+  #errorMessage = `Вы не смогли найти этот рецепт. Пожалуйста, попробуйте другой!`;
+  #message = '';
 
   render(data) {
     this.#data = data; // Сохраняем данные о рецепте в приватное поле
@@ -23,6 +25,37 @@ export class RecipeView {
           <use href="${icons}#icon-loader"></use>
         </svg>
       </div>
+    `;
+    this.#clear();
+    this.#parentElement.insertAdjacentHTML('afterbegin', markup);
+  }
+
+  renderError(message = this.#message) {
+    const markup = `
+    <div class="error">
+            <div>
+              <svg>
+                <use href="${icons}#icon-alert-triangle"></use>
+              </svg>
+            </div>
+            <p>${message}</p>
+          </div>
+    `;
+    this.#clear();
+    this.#parentElement.insertAdjacentHTML('afterbegin', markup);
+  }
+
+  // Метод для отображения общего сообщения
+  renderMessage(message = this.#errorMessage) {
+    const markup = `
+    <div class="message">
+            <div>
+              <svg>
+                <use href="${icons}#icon-smile"></use>
+              </svg>
+            </div>
+            <p>${message}</p>
+          </div>
     `;
     this.#clear();
     this.#parentElement.insertAdjacentHTML('afterbegin', markup);

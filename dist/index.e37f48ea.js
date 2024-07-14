@@ -589,15 +589,14 @@ var _webImmediateJs = require("core-js/modules/web.immediate.js");
 var _model = require("./model");
 var _recipeView = require("./views/recipeView");
 var _recipeViewDefault = parcelHelpers.interopDefault(_recipeView);
+var _searchView = require("./views/searchView");
+var _searchViewDefault = parcelHelpers.interopDefault(_searchView);
 var _runtime = require("regenerator-runtime/runtime");
-const recipeContainer = document.querySelector(".recipe");
-// https://forkify-api.herokuapp.com/v2
-///////////////////////////////////////
+// Контроллер для загрузки и отображения рецептов
 const controlRecipes = async function() {
     try {
         // Извлекаем идентификатор рецепта из хэша URL
         const id = window.location.hash.slice(1);
-        console.log(id);
         if (!id) return;
         //1) Загрузка данных рецепта
         (0, _recipeViewDefault.default).renderSpinner();
@@ -607,14 +606,30 @@ const controlRecipes = async function() {
         (0, _recipeViewDefault.default).render(_model.state.recipe);
     } catch (err) {
         console.log(err);
+        (0, _recipeViewDefault.default).renderError();
+    }
+};
+// Контроллер для загрузки и отображения результатов поиска
+const controlSearcResults = async function() {
+    try {
+        //1) Получаем поисковый запрос от пользователя
+        const query = (0, _searchViewDefault.default).getQuery();
+        if (!query) return;
+        //2) Загрузка данных о рецептах по запросу
+        await _model.loadSearchResults(query);
+        //3)Результаты поиска
+        console.log(_model.state.search.results);
+    } catch (err) {
+        console.log(err);
     }
 };
 const init = function() {
     (0, _recipeViewDefault.default).addHandlerRender(controlRecipes);
+    (0, _searchViewDefault.default).addHandlerSearch(controlSearcResults);
 };
 init();
 
-},{"@parcel/transformer-js/src/esmodule-helpers.js":"gkKU3","core-js/modules/web.immediate.js":"49tUX","regenerator-runtime/runtime":"dXNgZ","./model":"Y4A21","./views/recipeView":"l60JC"}],"gkKU3":[function(require,module,exports) {
+},{"@parcel/transformer-js/src/esmodule-helpers.js":"gkKU3","core-js/modules/web.immediate.js":"49tUX","regenerator-runtime/runtime":"dXNgZ","./model":"Y4A21","./views/recipeView":"l60JC","./views/searchView":"9OQAM"}],"gkKU3":[function(require,module,exports) {
 exports.interopDefault = function(a) {
     return a && a.__esModule ? a : {
         default: a
@@ -2467,15 +2482,20 @@ var parcelHelpers = require("@parcel/transformer-js/src/esmodule-helpers.js");
 parcelHelpers.defineInteropFlag(exports);
 parcelHelpers.export(exports, "state", ()=>state);
 parcelHelpers.export(exports, "loadRecipe", ()=>loadRecipe);
+parcelHelpers.export(exports, "loadSearchResults", ()=>loadSearchResults);
 var _regeneratorRuntime = require("regenerator-runtime");
 var _config = require("./config");
 var _helpers = require("./helpers");
 const state = {
-    recipe: {}
+    recipe: {},
+    search: {
+        query: "",
+        results: []
+    }
 };
 const loadRecipe = async function(id) {
     try {
-        const data = await (0, _helpers.getJSON)(`${(0, _config.API_URL)}/${id}`);
+        const data = await (0, _helpers.getJSON)(`${(0, _config.API_URL)}${id}`);
         const { recipe } = data.data;
         state.recipe = {
             id: recipe.id,
@@ -2491,15 +2511,37 @@ const loadRecipe = async function(id) {
     } catch (err) {
         //обработка временных ошибок
         console.error(`${err} \u{1F6AB}`);
+        throw err;
+    }
+};
+const loadSearchResults = async function(query) {
+    try {
+        // Сохраняем запрос в состоянии
+        state.search.query = query;
+        const data = await (0, _helpers.getJSON)(` ${(0, _config.API_URL)}?search=${query}`);
+        console.log(data.data);
+        // Обрабатываем полученные результаты поиска и сохраняем их в состоянии приложения (state.search.results)
+        state.search.results = data.data.recipes.map((rec)=>{
+            return {
+                id: rec.id,
+                title: rec.title,
+                publisher: rec.publisher,
+                image: rec.image_url
+            };
+        });
+    } catch (err) {
+        console.error(`${err} \u{1F6AB}`);
+        throw err;
     }
 };
 
 },{"@parcel/transformer-js/src/esmodule-helpers.js":"gkKU3","regenerator-runtime":"dXNgZ","./config":"k5Hzs","./helpers":"hGI1E"}],"k5Hzs":[function(require,module,exports) {
+// https://forkify-api.herokuapp.com/v2
 var parcelHelpers = require("@parcel/transformer-js/src/esmodule-helpers.js");
 parcelHelpers.defineInteropFlag(exports);
 parcelHelpers.export(exports, "API_URL", ()=>API_URL);
 parcelHelpers.export(exports, "TIMEOUT_SEC", ()=>TIMEOUT_SEC);
-const API_URL = "https://forkify-api.herokuapp.com/api/v2/recipes";
+const API_URL = "https://forkify-api.herokuapp.com/api/v2/recipes/";
 const TIMEOUT_SEC = 10;
 
 },{"@parcel/transformer-js/src/esmodule-helpers.js":"gkKU3"}],"hGI1E":[function(require,module,exports) {
@@ -2526,7 +2568,7 @@ const getJSON = async function(url) {
         if (!res.ok) throw new Error(`${data.message} (${res.status})`);
         return data;
     } catch (err) {
-        alert(err);
+        throw err;
     }
 };
 
@@ -2540,6 +2582,8 @@ var _fractional = require("fractional");
 class RecipeView {
     #parentElement = document.querySelector(".recipe");
     #data;
+    #errorMessage = `\u{412}\u{44B} \u{43D}\u{435} \u{441}\u{43C}\u{43E}\u{433}\u{43B}\u{438} \u{43D}\u{430}\u{439}\u{442}\u{438} \u{44D}\u{442}\u{43E}\u{442} \u{440}\u{435}\u{446}\u{435}\u{43F}\u{442}. \u{41F}\u{43E}\u{436}\u{430}\u{43B}\u{443}\u{439}\u{441}\u{442}\u{430}, \u{43F}\u{43E}\u{43F}\u{440}\u{43E}\u{431}\u{443}\u{439}\u{442}\u{435} \u{434}\u{440}\u{443}\u{433}\u{43E}\u{439}!`;
+    #message = "";
     render(data) {
         this.#data = data; // Сохраняем данные о рецепте в приватное поле
         const markup = this.#generateMarkup(); // Генерируем разметку и вставляем на страницу
@@ -2556,6 +2600,35 @@ class RecipeView {
           <use href="${(0, _iconsSvgDefault.default)}#icon-loader"></use>
         </svg>
       </div>
+    `;
+        this.#clear();
+        this.#parentElement.insertAdjacentHTML("afterbegin", markup);
+    }
+    renderError(message = this.#message) {
+        const markup = `
+    <div class="error">
+            <div>
+              <svg>
+                <use href="${(0, _iconsSvgDefault.default)}#icon-alert-triangle"></use>
+              </svg>
+            </div>
+            <p>${message}</p>
+          </div>
+    `;
+        this.#clear();
+        this.#parentElement.insertAdjacentHTML("afterbegin", markup);
+    }
+    // Метод для отображения общего сообщения
+    renderMessage(message = this.#errorMessage) {
+        const markup = `
+    <div class="message">
+            <div>
+              <svg>
+                <use href="${(0, _iconsSvgDefault.default)}#icon-smile"></use>
+              </svg>
+            </div>
+            <p>${message}</p>
+          </div>
     `;
         this.#clear();
         this.#parentElement.insertAdjacentHTML("afterbegin", markup);
@@ -2952,6 +3025,29 @@ Fraction.primeFactors = function(n) {
 };
 module.exports.Fraction = Fraction;
 
-},{}]},["MWpgg","aenu9"], "aenu9", "parcelRequire3a11")
+},{}],"9OQAM":[function(require,module,exports) {
+var parcelHelpers = require("@parcel/transformer-js/src/esmodule-helpers.js");
+parcelHelpers.defineInteropFlag(exports);
+class SearchView {
+    #parentElement = document.querySelector(".search");
+    // Извлекаем значение из поля ввода
+    getQuery() {
+        const query = this.#parentElement.querySelector(".search__field").value;
+        this.#clearInput(query);
+        return query;
+    }
+    #clearInput() {
+        this.#parentElement.querySelector(".search__field").value = "";
+    }
+    addHandlerSearch(handler) {
+        this.#parentElement.addEventListener("submit", function(e) {
+            e.preventDefault();
+            handler();
+        });
+    }
+}
+exports.default = new SearchView();
+
+},{"@parcel/transformer-js/src/esmodule-helpers.js":"gkKU3"}]},["MWpgg","aenu9"], "aenu9", "parcelRequire3a11")
 
 //# sourceMappingURL=index.e37f48ea.js.map
