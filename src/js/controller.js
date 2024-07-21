@@ -1,9 +1,16 @@
 import * as model from './model';
 import recipeView from './views/recipeView';
 import searchView from './views/searchView';
+import resultsView from './views/resultsView';
+import paginationView from './views/paginationView';
 
 import 'core-js/stable';
 import 'regenerator-runtime/runtime';
+
+// Проверяем, поддерживает ли текущая среда Hot Module Replacement (HMR)
+if (module.hot) {
+  module.hot.accept();
+}
 
 // Контроллер для загрузки и отображения рецептов
 const controlRecipes = async function () {
@@ -30,6 +37,8 @@ const controlRecipes = async function () {
 // Контроллер для загрузки и отображения результатов поиска
 const controlSearcResults = async function () {
   try {
+    resultsView.renderSpinner();
+
     //1) Получаем поисковый запрос от пользователя
     const query = searchView.getQuery();
     if (!query) return;
@@ -38,14 +47,26 @@ const controlSearcResults = async function () {
     await model.loadSearchResults(query);
 
     //3)Результаты поиска
-    console.log(model.state.search.results);
+    resultsView.render(model.getSearchResultsPage(1));
+
+    //4) Отображение начальных кнопок нумерации страниц
+    paginationView.render(model.state.search);
   } catch (err) {
     console.log(err);
   }
 };
 
+const controlPagination = function (goToPage) {
+  // Загружаем новую страницу результатов
+  resultsView.render(model.getSearchResultsPage(goToPage));
+
+  //обновление отображения
+  paginationView.render(model.state.search);
+};
+
 const init = function () {
   recipeView.addHandlerRender(controlRecipes);
   searchView.addHandlerSearch(controlSearcResults);
+  paginationView.addHandlerPagination(controlPagination);
 };
 init();
