@@ -1,6 +1,7 @@
 import { async } from 'regenerator-runtime';
 import { API_URL, RES_PER_PAGE } from './config';
 import { getJSON } from './helpers';
+import { locale } from 'core-js';
 
 // state.js для хранения данных рецепта
 export const state = {
@@ -11,6 +12,7 @@ export const state = {
     page: 1,
     resultsPerPage: RES_PER_PAGE,
   },
+  bookmarks: [],
 };
 
 // model.js загрузка данных рецепта
@@ -29,7 +31,9 @@ export const loadRecipe = async function (id) {
       cookingTime: recipe.cooking_time,
       ingredients: recipe.ingredients,
     };
-    console.log(state.recipe);
+    if (state.bookmarks.some(book => book.id === id))
+      state.recipe.bookmarked = true;
+    else state.recipe.bookmarked = false;
   } catch (err) {
     //обработка временных ошибок
     console.error(`${err} 🚫`);
@@ -55,6 +59,7 @@ export const loadSearchResults = async function (query) {
         image: rec.image_url,
       };
     });
+    state.search.page = 1;
   } catch (err) {
     console.error(`${err} 🚫`);
     throw err;
@@ -78,3 +83,33 @@ export const updateServings = function (newServings) {
   });
   state.recipe.servings = newServings;
 };
+
+const persistBookmark = function () {
+  localStorage.setItem('bookmarks', JSON.stringify(state.bookmarks));
+};
+
+export const addBookmark = function (recipe) {
+  state.bookmarks.push(recipe);
+
+  if (recipe.id === state.recipe.id) state.recipe.bookmarked = true;
+
+  persistBookmark();
+};
+
+export const deletBookmark = function (id) {
+  const index = state.bookmarks.findIndex(el => el.id === id);
+  state.bookmarks.splice(index, 1);
+
+  if (id === state.recipe.id) state.recipe.bookmarked = false;
+};
+
+const init = function () {
+  const storage = localStorage.getItem('bookmarks');
+  if (storage) state.bookmarks = JSON.parse(storage);
+};
+init();
+
+const clear = function () {
+  localStorage.clear('bookmarks');
+};
+clear();
