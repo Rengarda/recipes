@@ -1,99 +1,139 @@
-import * as model from './model';
-import recipeView from './views/recipeView';
-import searchView from './views/searchView';
-import resultsView from './views/resultsView';
-import paginationView from './views/paginationView';
-import bookmarksView from './views/bookmarksView';
+import * as model from './model.js';
+import { MODAL_CLOSE_SEC } from './config.js';
+import recipeView from './views/recipeView.js';
+import searchView from './views/searchView.js';
+import resultsView from './views/resultsView.js';
+import paginationView from './views/paginationView.js';
+import bookmarksView from './views/bookmarksView.js';
+import addRecipeView from './views/addRecipeView.js';
 
 import 'core-js/stable';
 import 'regenerator-runtime/runtime';
+import { async } from 'regenerator-runtime';
 
-// Контроллер для загрузки и отображения рецептов
+// Контроллер для управления рецептами
 const controlRecipes = async function () {
   try {
-    // Извлекаем идентификатор рецепта из хэша URL
     const id = window.location.hash.slice(1);
 
     if (!id) return;
-
-    //0)Обновление вида результатов для пометки выбранного результата поиска
-    resultsView.update(model.getSearchResultsPage());
-
-    //1) Загрузка данных рецепта
     recipeView.renderSpinner();
 
-    await model.loadRecipe(id);
-    const { recipe } = model.state;
+    // 0) Обновить представление результатов поиска, чтобы отметить выбранный результат
+    resultsView.update(model.getSearchResultsPage());
 
-    //2) Отображение данных рецепта с помощью метода render объекта recipeView
-    recipeView.render(model.state.recipe);
-    //3) Обновление закладок
+    // 1) Обновление представления закладок
     bookmarksView.update(model.state.bookmarks);
+
+    // 2) Загрузка рецепта
+    await model.loadRecipe(id);
+
+    // 3) Отображение рецепта
+    recipeView.render(model.state.recipe);
   } catch (err) {
-    console.log(err);
     recipeView.renderError();
+    console.error(err);
   }
 };
 
-// Контроллер для загрузки и отображения результатов поиска
-const controlSearcResults = async function () {
+// Контроллер для управления результатами поиска
+const controlSearchResults = async function () {
   try {
     resultsView.renderSpinner();
 
-    //1) Получаем поисковый запрос от пользователя
+    // 1) Получить поисковый запрос
     const query = searchView.getQuery();
     if (!query) return;
 
-    //2) Загрузка данных о рецептах по запросу
+    // 2) Загрузить результаты поиска
     await model.loadSearchResults(query);
 
-    //3)Результаты поиска
-    resultsView.render(model.getSearchResultsPage(1));
+    // 3) Отобразить результаты
+    resultsView.render(model.getSearchResultsPage());
 
-    //4) Отображение начальных кнопок нумерации страниц
+    // 4) Отобразить начальные кнопки пагинации
     paginationView.render(model.state.search);
   } catch (err) {
     console.log(err);
   }
 };
 
+// Контроллер для управления пагинацией
 const controlPagination = function (goToPage) {
-  // Загружаем новую страницу результатов
+  // 1) Отобразить НОВЫЕ результаты
   resultsView.render(model.getSearchResultsPage(goToPage));
 
-  //обновление отображения
+  // 2) Отобразить НОВЫЕ кнопки пагинации
   paginationView.render(model.state.search);
 };
 
+// Контроллер для управления количеством порций
 const controlServings = function (newServings) {
-  //обновление сервиса рецепта(в состоянии)
+  // Обновить количество порций в состоянии
   model.updateServings(newServings);
-  //обновление вида рецепта
+
+  // Обновить представление рецепта
   recipeView.update(model.state.recipe);
 };
 
+// Контроллер для управления закладками
 const controlAddBookmark = function () {
-  //1) Добавление/удаление закладок
+  // 1) Добавить/удалить закладку
   if (!model.state.recipe.bookmarked) model.addBookmark(model.state.recipe);
-  else model.deletBookmark(model.state.recipe.id);
+  else model.deleteBookmark(model.state.recipe.id);
 
-  //2) Обновление вида рецепта
+  // 2) Обновить представление рецепта
   recipeView.update(model.state.recipe);
 
-  //3) Render закладок
+  // 3) Отобразить закладки
   bookmarksView.render(model.state.bookmarks);
 };
 
+// Контроллер для отображения закладок
 const controlBookmarks = function () {
   bookmarksView.render(model.state.bookmarks);
 };
 
+// Контроллер для добавления нового рецепта
+const controlAddRecipe = async function (newRecipe) {
+  try {
+    // Показать спиннер загрузки
+    addRecipeView.renderSpinner();
+
+    // Загрузить данные нового рецепта
+    await model.uploadRecipe(newRecipe);
+    console.log(model.state.recipe);
+
+    // Отобразить рецепт
+    recipeView.render(model.state.recipe);
+
+    // Сообщение об успешном добавлении
+    addRecipeView.renderMessage();
+
+    // Отобразить представление закладок
+    bookmarksView.render(model.state.bookmarks);
+
+    // Изменить ID в URL
+    window.history.pushState(null, '', `#${model.state.recipe.id}`);
+
+    // Закрыть окно формы
+    setTimeout(function () {
+      addRecipeView.toggleWindow();
+    }, MODAL_CLOSE_SEC * 1000);
+  } catch (err) {
+    console.error('💥', err);
+    addRecipeView.renderError(err.message);
+  }
+};
+
+// Инициализация обработчиков событий
 const init = function () {
   bookmarksView.addHandlerRender(controlBookmarks);
   recipeView.addHandlerRender(controlRecipes);
   recipeView.addHandlerUpdateServings(controlServings);
   recipeView.addHandlerAddBookmark(controlAddBookmark);
-  searchView.addHandlerSearch(controlSearcResults);
-  paginationView.addHandlerPagination(controlPagination);
+  searchView.addHandlerSearch(controlSearchResults);
+  paginationView.addHandlerClick(controlPagination);
+  addRecipeView.addHandlerUpload(controlAddRecipe);
 };
 init();

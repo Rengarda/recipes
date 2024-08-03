@@ -3,6 +3,16 @@ import icons from 'url:../../img/icons.svg'; // Parcel 2
 export default class View {
   _data; // Приватное поле для хранения данных о рецепте
 
+  /**
+   * Отображает полученный объект в DOM
+   * @param {Object | Object[]} data Данные для отображения (например, рецепт)
+   * @param {boolean} [render=true] Если false, создать строку разметки вместо отображения в DOM
+   * @returns {undefined | string} Возвращается строка разметки, если render=false
+   * @this {Object} Экземпляр View
+   * @author Daria
+   * @todo Завершить реализацию
+   */
+
   render(data, render = true) {
     if (!data || (Array.isArray(data) && data.length === 0))
       return this.renderError();
@@ -16,6 +26,14 @@ export default class View {
     this._parentElement.insertAdjacentHTML('afterbegin', markup);
   }
 
+  /**
+   * Обновляет содержимое элемента на основе новых данных.
+   * Метод сравнивает текущую разметку с новой и обновляет только те части, которые изменились.
+   * @param {Object} data - Новые данные, которые используются для генерации обновленной разметки.
+   * @this {Object} View - Экземпляр класса View, на который вызывается метод.
+   * @property {Element} _parentElement - Родительский элемент, в котором происходит обновление разметки.
+   * @method _generateMarkup - Метод класса View, генерирующий разметку на основе текущих данных.
+   */
   update(data) {
     this._data = data;
     const newMarkup = this._generateMarkup();
@@ -63,7 +81,7 @@ export default class View {
     this._parentElement.insertAdjacentHTML('afterbegin', markup);
   }
 
-  renderError(message = this._message) {
+  renderError(message = this._errorMessage) {
     const markup = `
       <div class="error">
               <div>
@@ -79,7 +97,7 @@ export default class View {
   }
 
   // Метод для отображения общего сообщения
-  renderMessage(message = this._errorMessage) {
+  renderMessage(message = this._message) {
     const markup = `
       <div class="message">
               <div>

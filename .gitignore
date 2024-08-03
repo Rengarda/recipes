@@ -1,3 +1,4 @@
+* text=auto
 node_modules/
 dist/
 .parcel-cache/
